@@ -423,7 +423,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/links/{id}/challenge": {
@@ -484,7 +485,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/links/{id}/token": {
@@ -633,7 +635,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/links/{id}/revoke": {
@@ -702,7 +705,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/health": {
@@ -730,7 +734,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     }
   }

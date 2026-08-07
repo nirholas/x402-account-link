@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { join } from "node:path";
 import { paywall, railSummary, type RoutePrices } from "./payments.js";
+import { ROUTE_SCHEMAS } from "./schemas.js";
 import {
   VaultError,
   createLink,
@@ -17,10 +18,12 @@ const PRICES: RoutePrices = {
   "POST /links": {
     price: "$0.01",
     description: "Create an encrypted account link; returns signed link record + proof",
+    ...ROUTE_SCHEMAS["POST /links"],
   },
   "GET /links/*/token": {
     price: "$0.002",
     description: "Mint a scoped, expiring access token for a link (owner-wallet auth)",
+    ...ROUTE_SCHEMAS["GET /links/*/token"],
   },
 };
 
