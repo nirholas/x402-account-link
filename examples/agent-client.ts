@@ -4,8 +4,13 @@
  *   PRIVATE_KEY=0x... BASE_URL=http://localhost:4021 npx tsx examples/agent-client.ts
  *
  * The wallet needs testnet USDC on Base Sepolia — faucet: https://faucet.circle.com
+ *
+ * This service is DUAL-RAIL: every 402 offers USDC on Base *and* USDC on Solana.
+ * This example takes the EVM rail (see the Solana note at the bottom of the file).
  */
 import { privateKeyToAccount } from "viem/accounts";
+import { selectPaymentRequirements } from "x402/client";
+import type { PaymentRequirements } from "x402/types";
 import { wrapFetchWithPayment } from "x402-fetch";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:4021";
@@ -16,7 +21,13 @@ if (!pk) {
 }
 
 const account = privateKeyToAccount(pk as `0x${string}`);
-const payFetch = wrapFetchWithPayment(fetch, account);
+
+// The 402 lists both rails. A viem wallet can only sign the EVM one, so pin the
+// selector to the EVM network instead of letting the default picker choose.
+const EVM_NETWORK = (process.env.NETWORK || "base-sepolia") as "base" | "base-sepolia";
+const payFetch = wrapFetchWithPayment(fetch, account, undefined, (reqs: PaymentRequirements[]) =>
+  selectPaymentRequirements(reqs, EVM_NETWORK, "exact"),
+);
 
 function receipt(res: Response): string {
   const h = res.headers.get("x-payment-response");
@@ -71,3 +82,28 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Paying on the SOLANA rail instead
+ *
+ * The same 402 also offers `{ scheme: "exact", network: "solana", asset: <USDC
+ * mint>, payTo: <base58>, maxAmountRequired, extra: { feePayer } }`. A Solana
+ * agent builds an SPL `transferChecked` for that amount to `payTo` with the
+ * facilitator's `feePayer` as fee payer (so it needs no SOL), signs it, and
+ * retries with the base64 X-PAYMENT envelope:
+ *
+ *   const challenge = await (await fetch(`${BASE_URL}/links`, { method: "POST", ... })).json();
+ *   const accept    = challenge.accepts.find((a) => a.network.startsWith("solana"));
+ *   // build + sign the SPL transfer with @solana/web3.js, or let the browser
+ *   // modal do it: @three-ws/x402-payment-modal drives Phantom end to end.
+ *   const xPayment  = Buffer.from(JSON.stringify({
+ *     x402Version: 1, scheme: "exact", network: accept.network,
+ *     payload: { transaction: signedTxBase64 },
+ *   })).toString("base64");
+ *   await fetch(`${BASE_URL}/links`, { method: "POST", headers: { "X-PAYMENT": xPayment, ... } });
+ *
+ * Raw dual-rail 402 body, for reference:
+ *
+ *   curl -s -X POST http://localhost:4021/links -H 'content-type: application/json' \
+ *     -d '{"owner":"0x1111111111111111111111111111111111111111","service":"demo","credentials":{"k":"v"}}' | jq .accepts
+ * ───────────────────────────────────────────────────────────────────────────── */

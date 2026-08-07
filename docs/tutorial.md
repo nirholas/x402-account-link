@@ -19,7 +19,8 @@ cp .env.example .env
 Minimum required:
 
 ```ini
-PAY_TO_ADDRESS=0xYourMerchantWallet   # wallet that receives USDC payments
+PAY_TO_ADDRESS=0x40252CFDF8B20Ed757D61ff157719F33Ec332402        # EVM (Base) receive address
+SOLANA_PAY_TO_ADDRESS=WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW  # Solana receive address
 ```
 
 Recommended for anything beyond a local demo:
@@ -47,8 +48,10 @@ curl -i -X POST http://localhost:4021/links \
   -d '{"owner":"0x1111111111111111111111111111111111111111","service":"demo","scopes":["read"],"credentials":{"user":"u","pass":"p"}}'
 ```
 
-You get `402 Payment Required` with an `accepts` array describing exactly what to pay
-(USDC amount, network, payTo address). That JSON *is* the x402 protocol.
+You get `402 Payment Required` with an `accepts` array holding **two** entries — USDC on
+Base and USDC on Solana — each describing exactly what to pay (amount in atomic units,
+network, asset address, payTo). That JSON *is* the x402 protocol. Your client picks the rail
+its wallet supports; the server settles whichever one comes back in `X-PAYMENT`.
 
 ## 5. A paid call with the example client
 

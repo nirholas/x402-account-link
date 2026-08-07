@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import { join } from "node:path";
-import { paymentMiddleware } from "x402-express";
+import { paywall, railSummary, type RoutePrices } from "./payments.js";
 import {
   VaultError,
   createLink,
@@ -12,52 +12,30 @@ import {
   revokeLink,
 } from "./service.js";
 
-const payTo = process.env.PAY_TO_ADDRESS as `0x${string}` | undefined;
-if (!payTo || !/^0x[0-9a-fA-F]{40}$/.test(payTo)) {
-  console.error(
-    "FATAL: PAY_TO_ADDRESS is not set (or is not a 0x address).\n" +
-      "Set it to the wallet that should receive x402 payments, e.g.\n" +
-      "  PAY_TO_ADDRESS=0xYourWallet npm run dev",
-  );
-  process.exit(1);
-}
-
-const network = (process.env.NETWORK || "base-sepolia") as "base" | "base-sepolia";
-const facilitatorUrl = (process.env.FACILITATOR_URL || "https://x402.org/facilitator") as `${string}://${string}`;
-
-const PRICES = {
-  "POST /links": "$0.01",
-  "GET /links/*/token": "$0.002",
-} as const;
+// Paid routes. `*` stands in for a path parameter. Free routes are absent here.
+const PRICES: RoutePrices = {
+  "POST /links": {
+    price: "$0.01",
+    description: "Create an encrypted account link; returns signed link record + proof",
+  },
+  "GET /links/*/token": {
+    price: "$0.002",
+    description: "Mint a scoped, expiring access token for a link (owner-wallet auth)",
+  },
+};
 
 const app = express();
 app.use(express.json({ limit: "256kb" }));
 
-app.use(
-  paymentMiddleware(
-    payTo,
-    {
-      "POST /links": {
-        price: PRICES["POST /links"],
-        network,
-        config: { description: "Create an encrypted account link; returns signed link record + proof" },
-      },
-      "GET /links/*/token": {
-        price: PRICES["GET /links/*/token"],
-        network,
-        config: { description: "Mint a scoped, expiring access token for a link (owner-wallet auth)" },
-      },
-    },
-    { url: facilitatorUrl },
-  ),
-);
+// Dual-rail x402: every paid route offers USDC on Base *and* USDC on Solana.
+app.use(paywall(PRICES));
 
 app.use(express.static(join(process.cwd(), "public"), { dotfiles: "allow" }));
 
 // ---------------------------------------------------------------- free routes
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "x402-account-link", network });
+  res.json({ ok: true, service: "x402-account-link", rails: ["base", "solana"] });
 });
 
 // Agent-facing skill file (repo root) served for discovery.
@@ -150,10 +128,9 @@ function handleError(res: express.Response, e: unknown): void {
 const port = Number(process.env.PORT || 4021);
 app.listen(port, () => {
   console.log(`x402-account-link vault listening on :${port}`);
-  console.log(`  network: ${network}  facilitator: ${facilitatorUrl}`);
-  console.log(`  payTo:   ${payTo}`);
+  for (const line of railSummary()) console.log(line);
   console.log("  paid routes:");
-  for (const [route, price] of Object.entries(PRICES)) console.log(`    ${route}  ${price}`);
+  for (const [route, cfg] of Object.entries(PRICES)) console.log(`    ${route}  ${cfg.price}`);
   console.log("  free routes: GET /health, GET /links/:id, GET /links/:id/challenge, POST /verify-token, POST /links/:id/revoke");
   console.log("  discovery:  GET /.well-known/x402, /skill.md");
 });

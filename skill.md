@@ -67,7 +67,20 @@ Response `200`:
 
 ## Payment
 
-x402 protocol (HTTP 402). Network: `base-sepolia` (testnet default; mainnet via `NETWORK=base`). Asset: **USDC**. Facilitator: `https://x402.org/facilitator`. Pay via `x402-fetch`, or any x402-compatible client: call the route, receive `402 Payment Required` with `accepts` payment requirements, sign the USDC payment, retry with the `X-PAYMENT` header. Settlement info is echoed in the `X-PAYMENT-RESPONSE` header on the 200.
+x402 protocol (HTTP 402). **Pay in USDC on Base or Solana — your client picks the rail.**
+
+Every paid route answers an unpaid request with one `402` whose `accepts` array lists both rails:
+
+| rail | network | asset | payTo | facilitator |
+|---|---|---|---|---|
+| EVM | `base-sepolia` (default) or `base` | USDC | `0x40252CFDF8B20Ed757D61ff157719F33Ec332402` | `https://x402.org/facilitator` |
+| Solana | `solana` (default) or `solana-devnet` | USDC | `WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW` | `https://facilitator.payai.network` |
+
+Flow: call the route → receive `402` with `accepts` → pick the entry your wallet supports → sign the USDC payment (EIP-3009 authorization on EVM, SPL `transferChecked` on Solana) → retry with the base64 `X-PAYMENT` header. The artifact comes back in the `200` body and the settlement receipt (`{rail, network, transaction, payer}`) in the `X-PAYMENT-RESPONSE` header.
+
+Pay with `x402-fetch` + `viem` (EVM), any x402 Solana client, or `@three-ws/x402-payment-modal` in a browser.
+
+Contact: **nichxbt@gmail.com**
 
 ## Error codes
 

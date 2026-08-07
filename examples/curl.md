@@ -19,7 +19,12 @@ Content-Type: application/json
 
 {
   "x402Version": 1,
-  "error": "X-PAYMENT header is required",
+  "error": "Payment required — pay in USDC on Base or Solana; your client picks the rail.",
+  "resource": {
+    "url": "http://localhost:4021/links",
+    "description": "Create an encrypted account link; returns signed link record + proof",
+    "mimeType": "application/json"
+  },
   "accepts": [
     {
       "scheme": "exact",
@@ -27,24 +32,47 @@ Content-Type: application/json
       "maxAmountRequired": "10000",        // $0.01 in 6-decimal USDC units
       "resource": "http://localhost:4021/links",
       "description": "Create an encrypted account link; returns signed link record + proof",
-      "payTo": "0xYourMerchantWallet",
+      "mimeType": "application/json",
+      "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
       "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-      "maxTimeoutSeconds": 60
+      "maxTimeoutSeconds": 60,
+      "extra": { "name": "USDC", "version": "2" }
+    },
+    {
+      "scheme": "exact",
+      "network": "solana",
+      "maxAmountRequired": "10000",
+      "amount": "10000",
+      "resource": "http://localhost:4021/links",
+      "description": "Create an encrypted account link; returns signed link record + proof",
+      "mimeType": "application/json",
+      "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "maxTimeoutSeconds": 60,
+      "extra": { "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4", "name": "USDC", "decimals": 6 }
     }
   ]
 }
 ```
 
+Two entries, two rails. Take whichever your wallet can sign — the server settles that one.
+
+Just want to see the rails? `curl -s -X POST http://localhost:4021/links -H 'content-type: application/json' -d '{}' | jq '.accepts[] | {network, payTo, asset, maxAmountRequired}'`
+
 ## 2. Pay
 
-The `X-PAYMENT` header is a base64-encoded, EIP-712-signed USDC authorization matching one
-entry of `accepts`. Signing it by hand is painful — use any x402 client to produce it:
+The `X-PAYMENT` header is a base64-encoded payment matching **one** entry of `accepts`:
+an EIP-3009 `transferWithAuthorization` signature on the Base entry, or a signed SPL
+`transferChecked` transaction on the Solana entry. Signing either by hand is painful —
+use any x402 client to produce it:
 
 ```bash
 PRIVATE_KEY=0x… BASE_URL=http://localhost:4021 npx tsx examples/agent-client.ts
 ```
 
-(`x402-fetch` intercepts the 402, signs the payment with your wallet, and retries.)
+(`x402-fetch` intercepts the 402, signs the payment with your wallet, and retries. For the
+Solana rail, use a Solana x402 client, or `@three-ws/x402-payment-modal` in a browser — it
+reads the same `accepts` array and drives Phantom.)
 
 ## 3. Retry with X-PAYMENT → 200
 
@@ -56,7 +84,8 @@ curl -i -X POST http://localhost:4021/links \
 ```
 
 The 200/201 response carries the artifact (signed link record + proof) in the body and the
-settlement receipt in the `X-PAYMENT-RESPONSE` header (base64 JSON: tx hash, network, payer).
+settlement receipt in the `X-PAYMENT-RESPONSE` header — base64 JSON:
+`{"success":true,"rail":"evm"|"solana","network":"…","transaction":"…","payer":"…"}`.
 
 ## Free routes need no payment
 

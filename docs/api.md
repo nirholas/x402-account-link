@@ -1,7 +1,8 @@
 # API reference
 
 Base URL: your deployment (default `http://localhost:4021`). Paid routes speak x402:
-an unpaid request returns `402` with `PaymentRequirements`; retry with `X-PAYMENT`.
+an unpaid request returns `402` with `PaymentRequirements` listing **both** payment rails
+(USDC on Base and USDC on Solana); pay either and retry with `X-PAYMENT`.
 Full machine-readable spec: [`openapi.json`](https://github.com/nirholas/x402-account-link/blob/main/openapi.json).
 
 ## POST /links — $0.01
@@ -86,18 +87,36 @@ Owner revocation (headers `X-Owner-Signature` over `x402-account-link revoke\nli
 
 ## GET /health — free
 
-`{ ok: true, service: "x402-account-link", network: "base-sepolia" }`.
+`{ ok: true, service: "x402-account-link", rails: ["base", "solana"] }`.
 
 ## 402 shape (all paid routes)
+
+Dual-rail: `accepts` always lists **both** USDC on Base and USDC on Solana. Pay either one.
 
 ```json
 {
   "x402Version": 1,
-  "error": "X-PAYMENT header is required",
-  "accepts": [{
-    "scheme": "exact", "network": "base-sepolia", "maxAmountRequired": "10000",
-    "resource": "http://localhost:4021/links", "payTo": "0x…", "asset": "0x036C…",
-    "maxTimeoutSeconds": 60
-  }]
+  "error": "Payment required — pay in USDC on Base or Solana; your client picks the rail.",
+  "resource": { "url": "http://localhost:4021/links", "description": "…", "mimeType": "application/json" },
+  "accepts": [
+    {
+      "scheme": "exact", "network": "base-sepolia", "maxAmountRequired": "10000",
+      "resource": "http://localhost:4021/links",
+      "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "maxTimeoutSeconds": 60, "extra": { "name": "USDC", "version": "2" }
+    },
+    {
+      "scheme": "exact", "network": "solana", "maxAmountRequired": "10000", "amount": "10000",
+      "resource": "http://localhost:4021/links",
+      "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "maxTimeoutSeconds": 60,
+      "extra": { "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4", "name": "USDC", "decimals": 6 }
+    }
+  ]
 }
 ```
+
+On success the `200` carries the artifact in the body and the receipt in `X-PAYMENT-RESPONSE`
+(base64 JSON: `{success, rail, network, transaction, payer}`).

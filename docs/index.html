@@ -53,7 +53,7 @@
 <body>
 <div class="wrap">
   <header>
-    <span class="badge">x402 · USDC on Base</span>
+    <span class="badge">x402 · USDC on Base <em style="font-style:normal;opacity:.6">+</em> Solana</span>
     <h1>x402-account-link</h1>
     <p class="tag">A one-time account linking vault for agent flows. Credentials go in once, AES-256-GCM encrypted; agents get scoped, expiring access tokens out — paid per use, no API keys.</p>
     <span class="install">git clone https://github.com/nirholas/x402-account-link && npm install && npm run dev</span>
@@ -79,19 +79,32 @@
     <h2>How x402 works here</h2>
     <div class="flow">
       <div class="step"><span class="n">1 · 402</span><h3>Request</h3><p>Call a paid route. The vault answers <code>402 Payment Required</code> with exact USDC payment requirements.</p></div>
-      <div class="step"><span class="n">2 · Sign</span><h3>Pay</h3><p>Your x402 client (<code>x402-fetch</code>) signs a USDC authorization on Base and retries with <code>X-PAYMENT</code>.</p></div>
-      <div class="step"><span class="n">3 · Settle</span><h3>Verify</h3><p>The facilitator verifies and settles the payment on-chain.</p></div>
+      <div class="step"><span class="n">2 · Sign</span><h3>Pay</h3><p>The 402 offers <strong>two rails</strong> — USDC on Base and USDC on Solana. Your client signs whichever one its wallet supports and retries with <code>X-PAYMENT</code>.</p></div>
+      <div class="step"><span class="n">3 · Settle</span><h3>Verify</h3><p>That rail's facilitator verifies and settles on-chain. The server holds no key and pays no gas.</p></div>
       <div class="step"><span class="n">4 · 200</span><h3>Artifact</h3><p>The signed link record or minted token arrives in the response body, receipt in <code>X-PAYMENT-RESPONSE</code>.</p></div>
     </div>
   </section>
 
   <section>
     <h2>Quickstart</h2>
-    <pre>export PAY_TO_ADDRESS=0xYourMerchantWallet   # receives the USDC
-npm install && npm run dev                    # vault on :4021
+    <pre>npm install && npm run dev                    # vault on :4021, both rails live
+
+# to receive the funds yourself:
+export PAY_TO_ADDRESS=0xYourEvmWallet         # USDC on Base
+export SOLANA_PAY_TO_ADDRESS=YourSolanaWallet # USDC on Solana
 
 # agent side — pays $0.01, gets the signed link record back
 PRIVATE_KEY=0xAgentWallet npx tsx examples/agent-client.ts</pre>
+  </section>
+
+  <section>
+    <h2>Payment rails</h2>
+    <table>
+      <tr><th>Rail</th><th>Network</th><th>Asset</th><th>Pays to</th><th>Facilitator</th></tr>
+      <tr><td>EVM</td><td><code>base-sepolia</code> (default) · <code>base</code></td><td>USDC</td><td><code>0x40252CFDF8B20Ed757D61ff157719F33Ec332402</code></td><td><code>x402.org/facilitator</code></td></tr>
+      <tr><td>Solana</td><td><code>solana</code> (default) · <code>solana-devnet</code></td><td>USDC</td><td><code>WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW</code></td><td><code>facilitator.payai.network</code></td></tr>
+    </table>
+    <p>Both entries appear in every 402. Pay in USDC on Base or Solana — your client picks the rail.</p>
   </section>
 
   <section class="links">

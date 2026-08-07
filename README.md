@@ -2,7 +2,9 @@
 
 > One-time account linking vault for agent flows — encrypted credential links with scoped, expiring access tokens.
 
-![License](https://img.shields.io/badge/license-Apache--2.0-blue) ![x402](https://img.shields.io/badge/payments-x402-0052ff) ![USDC](https://img.shields.io/badge/asset-USDC%20on%20Base-2775CA)
+![License](https://img.shields.io/badge/license-Apache--2.0-blue) ![x402](https://img.shields.io/badge/payments-x402-0052ff) ![USDC](https://img.shields.io/badge/asset-USDC-2775CA) ![Rails](https://img.shields.io/badge/rails-Base%20%2B%20Solana-9945FF)
+
+**Pay in USDC on Base or Solana — your client picks the rail.**
 
 Agents constantly hit the "log in to your account" wall. The safe answer is not handing your
 password to every agent: it's linking the account **once** into a vault (AES-256-GCM at rest)
@@ -21,7 +23,7 @@ use instead of running a free service.
 ```bash
 git clone https://github.com/nirholas/x402-account-link
 cd x402-account-link && npm install
-PAY_TO_ADDRESS=0xYourMerchantWallet npm run dev       # vault on :4021
+npm run dev                                           # vault on :4021
 
 # agent side (Base Sepolia USDC — faucet: https://faucet.circle.com)
 PRIVATE_KEY=0xAgentWallet npm run client
@@ -42,12 +44,20 @@ Full reference: [docs/api.md](docs/api.md) · [openapi.json](openapi.json)
 
 ## How x402 works
 
-1. Call a paid route → `402 Payment Required` with an `accepts` array (exact USDC amount, network, `payTo`).
-2. Your client (`x402-fetch`, or any x402 client) signs the payment authorization.
-3. Retry with the `X-PAYMENT` header; the facilitator verifies and settles on-chain.
-4. `200` — artifact in the body, settlement receipt in `X-PAYMENT-RESPONSE`.
+1. Call a paid route → `402 Payment Required` with an `accepts` array listing **both rails**:
+   USDC on Base (EVM, EIP-3009) and USDC on Solana (SPL `transferChecked`).
+2. Your client picks whichever entry its wallet supports and signs that payment.
+3. Retry with the base64 `X-PAYMENT` header; the matching facilitator verifies and settles on-chain.
+4. `200` — artifact in the body, settlement receipt (`{rail, network, transaction, payer}`) in `X-PAYMENT-RESPONSE`.
 
-Testnet by default (`base-sepolia` + `https://x402.org/facilitator`). Mainnet: `NETWORK=base` + your `FACILITATOR_URL`.
+| rail | network (default) | mainnet | payTo | facilitator |
+|---|---|---|---|---|
+| EVM | `base-sepolia` | `NETWORK=base` | `PAY_TO_ADDRESS` | `FACILITATOR_URL` (default `https://x402.org/facilitator`) |
+| Solana | `solana` | already mainnet; `SOLANA_NETWORK=devnet` for testing | `SOLANA_PAY_TO_ADDRESS` | `SOLANA_FACILITATOR_URL` (default `https://facilitator.payai.network`) |
+
+Both rails ship with the suite's public receive addresses pre-filled in `.env.example`, so
+`npm run dev` works with zero configuration. Set your own addresses to receive the funds.
+A rail with an invalid address is simply omitted from `accepts` — the service still runs on the other.
 
 ## Real backend / keys
 
@@ -72,6 +82,10 @@ envs unlock is **security**, not data:
 Site: **https://nirholas.github.io/x402-account-link/** — [tutorial](docs/tutorial.md) · [API](docs/api.md) · [agents](docs/agents.md) · [curl walkthrough](examples/curl.md)
 
 Part of the [x402 Suite](https://github.com/nirholas/x402-suite).
+
+## Support
+
+Questions, bugs, integration help: **nichxbt@gmail.com**
 
 ## License
 
