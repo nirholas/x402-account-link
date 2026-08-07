@@ -1,0 +1,215 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402-account-link",
+    "version": "0.1.0",
+    "description": "One-time account linking vault for agent flows — encrypted credential links with scoped, expiring access tokens. Paid routes use the x402 payment protocol (HTTP 402, USDC on Base).",
+    "license": { "name": "Apache-2.0", "identifier": "Apache-2.0" }
+  },
+  "servers": [{ "url": "http://localhost:4021" }],
+  "components": {
+    "schemas": {
+      "PaymentRequirements": {
+        "type": "object",
+        "description": "x402 payment requirements returned with HTTP 402 responses.",
+        "properties": {
+          "x402Version": { "type": "integer" },
+          "error": { "type": "string" },
+          "accepts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "scheme": { "type": "string", "example": "exact" },
+                "network": { "type": "string", "example": "base-sepolia" },
+                "maxAmountRequired": { "type": "string" },
+                "resource": { "type": "string" },
+                "description": { "type": "string" },
+                "mimeType": { "type": "string" },
+                "payTo": { "type": "string" },
+                "maxTimeoutSeconds": { "type": "integer" },
+                "asset": { "type": "string" },
+                "extra": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": { "error": { "type": "string" }, "message": { "type": "string" } }
+      },
+      "LinkRecord": {
+        "type": "object",
+        "properties": {
+          "linkId": { "type": "string" },
+          "owner": { "type": "string" },
+          "service": { "type": "string" },
+          "label": { "type": "string" },
+          "scopes": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "credentialFingerprint": { "type": "string" },
+          "revoked": { "type": "boolean" }
+        }
+      },
+      "SignedLinkRecord": {
+        "type": "object",
+        "properties": {
+          "link": { "$ref": "#/components/schemas/LinkRecord" },
+          "proof": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "signedFields": { "type": "string" },
+              "signature": { "type": "string" }
+            }
+          }
+        }
+      },
+      "ScopedToken": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" },
+          "linkId": { "type": "string" },
+          "service": { "type": "string" },
+          "scope": { "type": "array", "items": { "type": "string" } },
+          "issuedAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "ttlSeconds": { "type": "integer" }
+        }
+      },
+      "TokenIntrospection": {
+        "type": "object",
+        "properties": {
+          "valid": { "type": "boolean" },
+          "reason": { "type": "string" },
+          "linkId": { "type": "string" },
+          "service": { "type": "string" },
+          "scope": { "type": "array", "items": { "type": "string" } },
+          "issuedAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "responses": {
+      "PaymentRequired": {
+        "description": "x402 payment required — sign the USDC payment and retry with the X-PAYMENT header.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaymentRequirements" } } }
+      }
+    }
+  },
+  "paths": {
+    "/links": {
+      "post": {
+        "summary": "Create an encrypted account link (paid, $0.01)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["owner", "service", "scopes", "credentials"],
+                "properties": {
+                  "owner": { "type": "string", "description": "0x wallet address controlling the link" },
+                  "service": { "type": "string" },
+                  "label": { "type": "string" },
+                  "scopes": { "type": "array", "items": { "type": "string" } },
+                  "credentials": { "type": "object", "description": "Encrypted at rest; never returned" },
+                  "ttlSeconds": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signed link record + proof",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SignedLinkRecord" } } }
+          },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "402": { "$ref": "#/components/responses/PaymentRequired" }
+        }
+      }
+    },
+    "/links/{id}": {
+      "get": {
+        "summary": "Link metadata, no secrets (free)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Link record", "content": { "application/json": { "schema": { "type": "object", "properties": { "link": { "$ref": "#/components/schemas/LinkRecord" } } } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/links/{id}/challenge": {
+      "get": {
+        "summary": "Owner challenge message to sign (free)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "scope", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Challenge",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "linkId": { "type": "string" }, "scope": { "type": "array", "items": { "type": "string" } }, "timestamp": { "type": "string" }, "message": { "type": "string" } } } } }
+          },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/links/{id}/token": {
+      "get": {
+        "summary": "Mint a scoped, expiring access token (paid, $0.002)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "scope", "in": "query", "schema": { "type": "string" }, "description": "Comma-separated subset of link scopes" },
+          { "name": "ttlSeconds", "in": "query", "schema": { "type": "integer", "minimum": 30, "maximum": 86400 } },
+          { "name": "X-Owner-Signature", "in": "header", "schema": { "type": "string" }, "description": "EIP-191 signature over the owner challenge" },
+          { "name": "X-Owner-Timestamp", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Scoped token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ScopedToken" } } } },
+          "401": { "description": "Owner auth failed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "402": { "$ref": "#/components/responses/PaymentRequired" },
+          "403": { "description": "Scope exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "410": { "description": "Link revoked or expired", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/verify-token": {
+      "post": {
+        "summary": "Token introspection (free)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["token"], "properties": { "token": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Introspection result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TokenIntrospection" } } } }
+        }
+      }
+    },
+    "/links/{id}/revoke": {
+      "post": {
+        "summary": "Revoke a link (free, owner auth)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "X-Owner-Signature", "in": "header", "schema": { "type": "string" } },
+          { "name": "X-Owner-Timestamp", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Revocation record", "content": { "application/json": { "schema": { "type": "object", "properties": { "revoked": { "type": "boolean" }, "link": { "$ref": "#/components/schemas/LinkRecord" } } } } } },
+          "401": { "description": "Owner auth failed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check (free)",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "service": { "type": "string" }, "network": { "type": "string" } } } } } } }
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "x402Version": 1,
+  "name": "x402-account-link",
+  "description": "One-time account linking vault for agent flows — encrypted credential links with scoped, expiring access tokens",
+  "resources": [
+    {
+      "resource": "POST /links",
+      "description": "Create an encrypted account link (AES-256-GCM at rest); returns a signed link record + HMAC proof. Credentials are never returned by any route.",
+      "price": "$0.01",
+      "network": "base-sepolia",
+      "asset": "USDC",
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "link": {
+            "type": "object",
+            "properties": {
+              "linkId": { "type": "string" },
+              "owner": { "type": "string" },
+              "service": { "type": "string" },
+              "label": { "type": "string" },
+              "scopes": { "type": "array", "items": { "type": "string" } },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "expiresAt": { "type": "string", "format": "date-time" },
+              "credentialFingerprint": { "type": "string" },
+              "revoked": { "type": "boolean" }
+            },
+            "required": ["linkId", "owner", "service", "scopes", "createdAt", "expiresAt", "credentialFingerprint"]
+          },
+          "proof": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "const": "hmac-sha256" },
+              "signedFields": { "type": "string" },
+              "signature": { "type": "string" }
+            }
+          }
+        },
+        "required": ["link", "proof"]
+      }
+    },
+    {
+      "resource": "GET /links/{id}/token",
+      "description": "Mint a scoped, expiring access token for a link (owner-wallet EIP-191 auth). The token is returned in the response body.",
+      "price": "$0.002",
+      "network": "base-sepolia",
+      "asset": "USDC",
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" },
+          "linkId": { "type": "string" },
+          "service": { "type": "string" },
+          "scope": { "type": "array", "items": { "type": "string" } },
+          "issuedAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "ttlSeconds": { "type": "integer" }
+        },
+        "required": ["token", "linkId", "service", "scope", "issuedAt", "expiresAt"]
+      }
+    }
+  ]
+}
