@@ -38,12 +38,12 @@ npm run dev
 ```
 
 You should see the startup banner listing both paid routes (`POST /links` $0.01,
-`GET /links/:id/token` $0.002) on port 4021.
+`GET /links/:id/token` $0.002) on port 4036.
 
 ## 4. Your first 402
 
 ```bash
-curl -i -X POST http://localhost:4021/links \
+curl -i -X POST http://localhost:4036/links \
   -H 'Content-Type: application/json' \
   -d '{"owner":"0x1111111111111111111111111111111111111111","service":"demo","scopes":["read"],"credentials":{"user":"u","pass":"p"}}'
 ```
@@ -58,7 +58,7 @@ its wallet supports; the server settles whichever one comes back in `X-PAYMENT`.
 Fund a throwaway wallet with Base Sepolia USDC (https://faucet.circle.com), then:
 
 ```bash
-PRIVATE_KEY=0xAgentWallet BASE_URL=http://localhost:4021 npm run client
+PRIVATE_KEY=0xAgentWallet BASE_URL=http://localhost:4036 npm run client
 ```
 
 The client:
@@ -88,9 +88,9 @@ with `readToken()` from `src/sign.ts`.
 With `ALLOW_UNSIGNED_OWNER=false`, minting requires the link owner's signature:
 
 ```bash
-curl http://localhost:4021/links/$LINK_ID/challenge?scope=booking:read
+curl http://localhost:4036/links/$LINK_ID/challenge?scope=booking:read
 # → { message, timestamp }   sign `message` with the owner wallet (EIP-191)
-curl "http://localhost:4021/links/$LINK_ID/token?scope=booking:read" \
+curl "http://localhost:4036/links/$LINK_ID/token?scope=booking:read" \
   -H "X-Owner-Signature: 0x…" -H "X-Owner-Timestamp: <timestamp>"
 ```
 

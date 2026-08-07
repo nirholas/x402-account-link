@@ -1,7 +1,7 @@
 /**
  * Full x402 payment flow against x402-account-link using x402-fetch.
  *
- *   PRIVATE_KEY=0x... BASE_URL=http://localhost:4021 npx tsx examples/agent-client.ts
+ *   PRIVATE_KEY=0x... BASE_URL=http://localhost:4036 npx tsx examples/agent-client.ts
  *
  * The wallet needs testnet USDC on Base Sepolia — faucet: https://faucet.circle.com
  *
@@ -13,7 +13,7 @@ import { selectPaymentRequirements } from "x402/client";
 import type { PaymentRequirements } from "x402/types";
 import { wrapFetchWithPayment } from "x402-fetch";
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:4021";
+const BASE_URL = process.env.BASE_URL || "http://localhost:4036";
 const pk = process.env.PRIVATE_KEY;
 if (!pk) {
   console.error("Set PRIVATE_KEY to a funded Base Sepolia wallet (testnet USDC: https://faucet.circle.com)");
@@ -104,6 +104,6 @@ main().catch((e) => {
  *
  * Raw dual-rail 402 body, for reference:
  *
- *   curl -s -X POST http://localhost:4021/links -H 'content-type: application/json' \
+ *   curl -s -X POST http://localhost:4036/links -H 'content-type: application/json' \
  *     -d '{"owner":"0x1111111111111111111111111111111111111111","service":"demo","credentials":{"k":"v"}}' | jq .accepts
  * ───────────────────────────────────────────────────────────────────────────── */

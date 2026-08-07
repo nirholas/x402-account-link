@@ -6,7 +6,7 @@ running vault (`PAY_TO_ADDRESS=0x… npm run dev`).
 ## 1. Hit a paid route without payment → 402
 
 ```bash
-curl -i -X POST http://localhost:4021/links \
+curl -i -X POST http://localhost:4036/links \
   -H 'Content-Type: application/json' \
   -d '{"owner":"0x1111111111111111111111111111111111111111","service":"example-airline","scopes":["booking:read"],"credentials":{"username":"u","password":"p"}}'
 ```
@@ -21,7 +21,7 @@ Content-Type: application/json
   "x402Version": 1,
   "error": "Payment required — pay in USDC on Base or Solana; your client picks the rail.",
   "resource": {
-    "url": "http://localhost:4021/links",
+    "url": "http://localhost:4036/links",
     "description": "Create an encrypted account link; returns signed link record + proof",
     "mimeType": "application/json"
   },
@@ -30,7 +30,7 @@ Content-Type: application/json
       "scheme": "exact",
       "network": "base-sepolia",
       "maxAmountRequired": "10000",        // $0.01 in 6-decimal USDC units
-      "resource": "http://localhost:4021/links",
+      "resource": "http://localhost:4036/links",
       "description": "Create an encrypted account link; returns signed link record + proof",
       "mimeType": "application/json",
       "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
@@ -43,7 +43,7 @@ Content-Type: application/json
       "network": "solana",
       "maxAmountRequired": "10000",
       "amount": "10000",
-      "resource": "http://localhost:4021/links",
+      "resource": "http://localhost:4036/links",
       "description": "Create an encrypted account link; returns signed link record + proof",
       "mimeType": "application/json",
       "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
@@ -57,7 +57,7 @@ Content-Type: application/json
 
 Two entries, two rails. Take whichever your wallet can sign — the server settles that one.
 
-Just want to see the rails? `curl -s -X POST http://localhost:4021/links -H 'content-type: application/json' -d '{}' | jq '.accepts[] | {network, payTo, asset, maxAmountRequired}'`
+Just want to see the rails? `curl -s -X POST http://localhost:4036/links -H 'content-type: application/json' -d '{}' | jq '.accepts[] | {network, payTo, asset, maxAmountRequired}'`
 
 ## 2. Pay
 
@@ -67,7 +67,7 @@ an EIP-3009 `transferWithAuthorization` signature on the Base entry, or a signed
 use any x402 client to produce it:
 
 ```bash
-PRIVATE_KEY=0x… BASE_URL=http://localhost:4021 npx tsx examples/agent-client.ts
+PRIVATE_KEY=0x… BASE_URL=http://localhost:4036 npx tsx examples/agent-client.ts
 ```
 
 (`x402-fetch` intercepts the 402, signs the payment with your wallet, and retries. For the
@@ -77,7 +77,7 @@ reads the same `accepts` array and drives Phantom.)
 ## 3. Retry with X-PAYMENT → 200
 
 ```bash
-curl -i -X POST http://localhost:4021/links \
+curl -i -X POST http://localhost:4036/links \
   -H 'Content-Type: application/json' \
   -H "X-PAYMENT: $PAYMENT_B64" \
   -d '{"owner":"0x1111…","service":"example-airline","scopes":["booking:read"],"credentials":{"username":"u","password":"p"}}'
@@ -90,8 +90,8 @@ settlement receipt in the `X-PAYMENT-RESPONSE` header — base64 JSON:
 ## Free routes need no payment
 
 ```bash
-curl http://localhost:4021/health
-curl http://localhost:4021/links/lnk_…            # metadata, no secrets
-curl -X POST http://localhost:4021/verify-token \
+curl http://localhost:4036/health
+curl http://localhost:4036/links/lnk_…            # metadata, no secrets
+curl -X POST http://localhost:4036/verify-token \
   -H 'Content-Type: application/json' -d '{"token":"…"}'
 ```

@@ -23,7 +23,7 @@ use instead of running a free service.
 ```bash
 git clone https://github.com/nirholas/x402-account-link
 cd x402-account-link && npm install
-npm run dev                                           # vault on :4021
+npm run dev                                           # vault on :4036
 
 # agent side (Base Sepolia USDC — faucet: https://faucet.circle.com)
 PRIVATE_KEY=0xAgentWallet npm run client

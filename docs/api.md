@@ -1,6 +1,6 @@
 # API reference
 
-Base URL: your deployment (default `http://localhost:4021`). Paid routes speak x402:
+Base URL: your deployment (default `http://localhost:4036`). Paid routes speak x402:
 an unpaid request returns `402` with `PaymentRequirements` listing **both** payment rails
 (USDC on Base and USDC on Solana); pay either and retry with `X-PAYMENT`.
 Full machine-readable spec: [`openapi.json`](https://github.com/nirholas/x402-account-link/blob/main/openapi.json).
@@ -97,18 +97,18 @@ Dual-rail: `accepts` always lists **both** USDC on Base and USDC on Solana. Pay 
 {
   "x402Version": 1,
   "error": "Payment required — pay in USDC on Base or Solana; your client picks the rail.",
-  "resource": { "url": "http://localhost:4021/links", "description": "…", "mimeType": "application/json" },
+  "resource": { "url": "http://localhost:4036/links", "description": "…", "mimeType": "application/json" },
   "accepts": [
     {
       "scheme": "exact", "network": "base-sepolia", "maxAmountRequired": "10000",
-      "resource": "http://localhost:4021/links",
+      "resource": "http://localhost:4036/links",
       "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
       "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
       "maxTimeoutSeconds": 60, "extra": { "name": "USDC", "version": "2" }
     },
     {
       "scheme": "exact", "network": "solana", "maxAmountRequired": "10000", "amount": "10000",
-      "resource": "http://localhost:4021/links",
+      "resource": "http://localhost:4036/links",
       "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
       "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
       "maxTimeoutSeconds": 60,

@@ -2,7 +2,7 @@
 
 One-time account linking vault for agent flows. An owner stores credentials for a third-party account **once** (encrypted with AES-256-GCM at rest); after that, agents never see the raw credentials — they mint **scoped, expiring access tokens** that downstream services verify. Every paid call returns its artifact in the response body: `POST /links` returns the signed link record + proof, `GET /links/:id/token` returns the minted token itself.
 
-**Base URL**: `{BASE_URL}` (self-hosted — e.g. `http://localhost:4021`)
+**Base URL**: `{BASE_URL}` (self-hosted — e.g. `http://localhost:4036`)
 
 ## Endpoints
 
