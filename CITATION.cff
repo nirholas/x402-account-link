@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "x402-account-link"
+abstract: "One-time account linking vault for agent flows: encrypted credential links with scoped, expiring access tokens"
+license: Apache-2.0
+repository-code: "https://github.com/nirholas/x402-account-link"
+url: "https://three.ws"
+authors:
+  - name: three.ws
+    website: "https://three.ws"
