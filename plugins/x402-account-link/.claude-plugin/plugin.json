@@ -1,0 +1,18 @@
+{
+  "name": "x402-account-link",
+  "version": "0.1.0",
+  "description": "Self-hosted credential vault for agents: encrypted account links and scoped, expiring access tokens, priced per call over x402.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/x402-account-link",
+  "homepage": "https://nirholas.github.io/x402-account-link/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "x402",
+    "credentials",
+    "vault",
+    "access-tokens",
+    "agents"
+  ]
+}
