@@ -1,0 +1,22 @@
+{
+  "name": "x402-account-link",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Self-hosted credential vault for agents: encrypted account links and scoped, expiring access tokens, priced per call over x402.",
+  "plugins": [
+    {
+      "name": "x402-account-link",
+      "source": "./plugins/x402-account-link",
+      "description": "Self-hosted credential vault for agents: encrypted account links and scoped, expiring access tokens, priced per call over x402.",
+      "category": "development",
+      "tags": [
+        "x402",
+        "credentials",
+        "vault",
+        "access-tokens",
+        "agents"
+      ]
+    }
+  ]
+}
